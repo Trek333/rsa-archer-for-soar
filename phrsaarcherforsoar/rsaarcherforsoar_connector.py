@@ -17,6 +17,8 @@ from phantom.action_result import ActionResult
 import requests
 import json
 from bs4 import BeautifulSoup
+import sys
+from archer_soap import ArcherSOAP
 
 
 class RetVal(tuple):
@@ -37,7 +39,14 @@ class RsaArcherForSoarConnector(BaseConnector):
         # Variable to hold a base_url in case the app makes REST calls
         # Do note that the app json defines the asset config, so please
         # modify this as you deem fit.
-        self._base_url = None
+        self.base_url = None
+        self.userName = None
+        self.password = None
+        self.instanceName = None
+        self.verifySSL = None
+        self.usersDomain = None
+        self.asoap = None
+        self.python_version = None
 
     def _process_empty_response(self, response, action_result):
         if response.status_code == 200:
@@ -138,7 +147,7 @@ class RsaArcherForSoarConnector(BaseConnector):
             )
 
         # Create a URL to connect to
-        url = self._base_url + endpoint
+        url = self.base_url + endpoint
 
         try:
             r = request_func(
@@ -166,23 +175,29 @@ class RsaArcherForSoarConnector(BaseConnector):
         # The status and progress messages are more important.
 
         self.save_progress("Connecting to endpoint")
-        # make rest call
-        ret_val, response = self._make_rest_call(
-            '/ws/general.asmx', action_result, params=None, headers=None
-        )
+        # make get_token call
+        ret_val, session = self.get_token()
 
         if phantom.is_fail(ret_val):
             # the call to the 3rd party device or service failed, action result should contain all the error details
             # for now the return is commented out, but after implementation, return from here
             self.save_progress("Test Connectivity Failed.")
-            # return action_result.get_status()
+            action_result.set_status(ret_val, session)
+            return action_result.get_status()
 
         # Return success
-        # self.save_progress("Test Connectivity Passed")
-        # return action_result.set_status(phantom.APP_SUCCESS)
+        self.save_progress("Test Connectivity Passed - " + str(session)[:4] + '...' + str(session)[-4:])
+        return action_result.set_status(phantom.APP_SUCCESS)
 
-        # For now return Error with a message, in case of success we don't set the message, but use the summary
-        return action_result.set_status(phantom.APP_ERROR, "Action not yet implemented")
+    def get_token(self):
+        try:
+            if not self.asoap:
+                self.asoap = ArcherSOAP(self.base_url, self.userName, self.password, self.instanceName, verify_cert=self.verifySSL,
+                             usersDomain=self.usersDomain, pythonVersion=self.python_version)
+        except Exception as e:
+            return RetVal(phantom.APP_ERROR, "Error Connecting to server. Details: {0}".format(str(e)))
+
+        return RetVal(phantom.APP_SUCCESS, self.asoap.session)
 
     def _handle_get_session_token(self, param):
         # Implement the handler here
@@ -200,32 +215,27 @@ class RsaArcherForSoarConnector(BaseConnector):
         # Optional values should use the .get() function
         # optional_parameter = param.get('optional_parameter', 'default_value')
 
-        # make rest call
-        ret_val, response = self._make_rest_call(
-            '/ws/general.asmx', action_result, params=None, headers=None
-        )
+        # make get_token call
+        ret_val, session = self.get_token()
 
         if phantom.is_fail(ret_val):
             # the call to the 3rd party device or service failed, action result should contain all the error details
             # for now the return is commented out, but after implementation, return from here
-            # return action_result.get_status()
-            pass
+            action_result.set_status(ret_val, session)
+            return action_result.get_status()
 
         # Now post process the data,  uncomment code as you deem fit
 
         # Add the response into the data section
-        action_result.add_data(response)
+        action_result.add_data(str(session)[:4] + '...' + str(session)[-4:])
 
         # Add a dictionary that is made up of the most important values from data into the summary
-        # summary = action_result.update_summary({})
-        # summary['num_data'] = len(action_result['data'])
+        summary = action_result.update_summary({})
+        summary['session'] = session
 
         # Return success, no need to set the message, only the status
         # BaseConnector will create a textual message based off of the summary dictionary
-        # return action_result.set_status(phantom.APP_SUCCESS)
-
-        # For now return Error with a message, in case of success we don't set the message, but use the summary
-        return action_result.set_status(phantom.APP_ERROR, "Action not yet implemented")
+        return action_result.set_status(phantom.APP_SUCCESS)
 
     def handle_action(self, param):
         ret_val = phantom.APP_SUCCESS
@@ -260,7 +270,13 @@ class RsaArcherForSoarConnector(BaseConnector):
         optional_config_name = config.get('optional_config_name')
         """
 
-        self._base_url = config.get('base_url')
+        self.base_url = config['base_url']
+        self.userName = config['userName']
+        self.password = config['password']
+        self.instanceName = config['instanceName']
+        self.verifySSL = config['verifySSL']
+        self.usersDomain = config.get('usersDomain', '')
+        self.python_version = int(sys.version_info[0])
 
         return phantom.APP_SUCCESS
 
