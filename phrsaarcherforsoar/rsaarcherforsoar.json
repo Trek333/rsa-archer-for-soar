@@ -1,7 +1,7 @@
 {
-    "appid": "dfbe6c64-e76c-40a6-967e-750663352ed0",
+    "appid": "07365153-d436-45f8-954f-afdca1cd1980",
     "name": "RSA Archer for SOAR",
-    "description": "The initial primary reason to  develop this app is the RSA Archer  API does not support HTTP Basic Authentication to allow use of the HTTP app for custom actions. The RSA Archer API uses their own authentication scheme.",
+    "description": "The initial primary reason to  develop this app is the RSA Archer  API(s) does not support HTTP Basic Authentication to allow use of the HTTP app for custom actions. The RSA Archer API(s) uses its own authentication scheme.",
     "type": "endpoint",
     "product_vendor": "RSA",
     "logo": "rsaarcherforsoar.svg",
@@ -12,7 +12,7 @@
     "publisher": "Jeff Berry",
     "license": "Copyright (c) Jeff Berry, 2021",
     "app_version": "1.0.0",
-    "utctime_updated": "2021-11-04T16:42:21.666414Z",
+    "utctime_updated": "2021-11-08T16:42:53.015273Z",
     "package_name": "phantom_rsaarcherforsoar",
     "main_module": "rsaarcherforsoar_connector.py",
     "min_phantom_version": "4.10.3.51237",
@@ -64,8 +64,7 @@
             "order": 5
         }
     },
-    "actions": [
-        {
+    "actions": [{
             "action": "test connectivity",
             "identifier": "test_connectivity",
             "description": "Validate the asset configuration for connectivity using supplied configuration",
@@ -75,8 +74,7 @@
             "parameters": {},
             "output": [],
             "versions": "EQ(*)"
-        },
-        {
+        }, {
             "action": "get session token",
             "identifier": "get_session_token",
             "description": "Login to RSA Archer to get session token",
@@ -84,23 +82,74 @@
             "type": "generic",
             "read_only": true,
             "parameters": {},
-            "output": [
-                {
+            "output": [{
                     "data_path": "action_result.status",
                     "data_type": "string",
                     "column_name": "status",
                     "column_order": 0
-                },
-                {
+                }, {
                     "data_path": "action_result.message",
                     "data_type": "string"
-                },
-                {
+                }, {
                     "data_path": "summary.total_objects",
                     "data_type": "numeric"
-                },
-                {
+                }, {
                     "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric"
+                }, {
+                    "data_path": "action_result.data.*.token",
+                    "data_type": "string"
+                }, {
+                    "data_path": "action_result.summary.*.ret_val",
+                    "data_type": "string"
+                }
+            ],
+            "render": {
+                "type": "table"
+            },
+            "versions": "EQ(*)"
+        }, {
+            "action": "terminate session",
+            "identifier": "terminate_session",
+            "description": "Terminate session token to logout of RSA Archer",
+            "verbose": "The terminate session action terminates the RSA Archer session for the given token.",
+            "type": "generic",
+            "read_only": true,
+            "parameters": {
+                "token": {
+                    "description": "Token to terminate",
+                    "data_type": "string",
+                    "required": true,
+                    "primary": false,
+                    "value_list": [],
+                    "default": "",
+                    "order": 0
+                }
+            },
+            "output": [{
+                    "data_path": "action_result.parameter.token",
+                    "data_type": "string",
+                    "column_name": "token",
+                    "column_order": 0
+                }, {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "column_name": "status",
+                    "column_order": 1
+                }, {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                }, {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric"
+                }, {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric"
+                }, {
+                    "data_path": "action_result.data.*.result",
+                    "data_type": "numeric"
+                }, {
+                    "data_path": "action_result.summary.*.ret_val",
                     "data_type": "numeric"
                 }
             ],
@@ -109,5 +158,10 @@
             },
             "versions": "EQ(*)"
         }
-    ]
+    ],
+    "directory": "rsaarcherforsoar_07365153-d436-45f8-954f-afdca1cd1980",
+    "version": 1,
+    "appname": "-",
+    "executable": "spawn3",
+    "disabled": false
 }

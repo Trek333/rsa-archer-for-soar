@@ -227,15 +227,68 @@ class RsaArcherForSoarConnector(BaseConnector):
         # Now post process the data,  uncomment code as you deem fit
 
         # Add the response into the data section
-        action_result.add_data(str(session)[:4] + '...' + str(session)[-4:])
+        action_result.add_data(dict(token=str(session)))
 
         # Add a dictionary that is made up of the most important values from data into the summary
         summary = action_result.update_summary({})
-        summary['session'] = session
+        summary['ret_val'] = ret_val
 
         # Return success, no need to set the message, only the status
         # BaseConnector will create a textual message based off of the summary dictionary
         return action_result.set_status(phantom.APP_SUCCESS)
+
+    def terminate_token(self, token):
+        try:
+            if not self.asoap:
+                self.asoap = ArcherSOAP(self.base_url, self.userName, self.password, self.instanceName, session=token,
+                             verify_cert=self.verifySSL, usersDomain=self.usersDomain, pythonVersion=self.python_version)
+            result = self.asoap.terminate_session(token)
+
+        except Exception as e:
+            return RetVal(phantom.APP_ERROR, "Error terminating token. Details: {0}".format(str(e)))
+
+        return RetVal(phantom.APP_SUCCESS, result)
+
+    def _handle_terminate_session(self, param):
+        # Implement the handler here
+        # use self.save_progress(...) to send progress messages back to the platform
+        self.save_progress("In action handler for: {0}".format(self.get_action_identifier()))
+
+        # Add an action result object to self (BaseConnector) to represent the action for this param
+        action_result = self.add_action_result(ActionResult(dict(param)))
+
+        # Access action parameters passed in the 'param' dictionary
+
+        # Required values can be accessed directly
+        token = param['token']
+
+        # Optional values should use the .get() function
+        # optional_parameter = param.get('optional_parameter', 'default_value')
+
+        # make terminate token call
+        ret_val, result = self.terminate_token(token)
+
+        if phantom.is_fail(ret_val):
+            # the call to the 3rd party device or service failed, action result should contain all the error details
+            # for now the return is commented out, but after implementation, return from here
+            action_result.set_status(ret_val, result)
+            return action_result.get_status()
+
+        # Now post process the data,  uncomment code as you deem fit
+
+        # Add the response into the data section
+        action_result.add_data(dict(result=result))
+
+        # Add a dictionary that is made up of the most important values from data into the summary
+        summary = action_result.update_summary({})
+        summary['ret_val'] = ret_val
+
+        # Return success, no need to set the message, only the status
+        # BaseConnector will create a textual message based off of the summary dictionary
+        if result == '1':
+            return action_result.set_status(phantom.APP_SUCCESS)
+        else:
+            return action_result.set_status(phantom.APP_ERROR, "Result not equal to 1; result = " + str(result))
 
     def handle_action(self, param):
         ret_val = phantom.APP_SUCCESS
@@ -250,6 +303,9 @@ class RsaArcherForSoarConnector(BaseConnector):
 
         elif action_id == 'get_session_token':
             ret_val = self._handle_get_session_token(param)
+
+        elif action_id == 'terminate_session':
+            ret_val = self._handle_terminate_session(param)
 
         return ret_val
 

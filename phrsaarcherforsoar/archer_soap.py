@@ -92,6 +92,21 @@ class ArcherSOAP(object):
             return
         raise Exception('Failed to authenticate to Archer web services')
 
+    def terminate_session(self, token):
+        doc, body = self._generate_xml_stub()
+
+        n = etree.SubElement(
+            body, 'TerminateSession', nsmap=ARCHER_MAP)
+        un = etree.SubElement(n, 'sessionToken')
+        un.text = token
+        sess_doc = self._do_request(self.base_uri + '/general.asmx', doc)
+        sess_root = sess_doc.getroot()
+        result = sess_root.xpath(
+            '/soap:Envelope/soap:Body/dummy:TerminateSessionResponse/dummy:TerminateSessionResult', namespaces=ALL_NS_MAP)
+        if result:
+            return result[0].text
+        raise Exception('Failed to terminate session token to Archer web services')
+
     def find_group(self, groupname):
         if not self.session:
             raise Exception('No session')
