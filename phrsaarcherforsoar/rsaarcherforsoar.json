@@ -10,8 +10,8 @@
     "python_version": "3",
     "product_version_regex": ".*",
     "publisher": "Jeff Berry",
-    "license": "Copyright (c) Jeff Berry, 2021",
-    "app_version": "1.0.0",
+    "license": "Copyright (c) Jeff Berry, 2022",
+    "app_version": "1.0.3",
     "utctime_updated": "2021-11-08T16:42:53.015273Z",
     "package_name": "phantom_rsaarcherforsoar",
     "main_module": "rsaarcherforsoar_connector.py",
@@ -48,7 +48,7 @@
             "required": true,
             "order": 3
         },
-        "verifySSL": {
+        "verify_ssl": {
             "description": "Verify server certificate",
             "data_type": "boolean",
             "required": true,
@@ -74,7 +74,8 @@
             "parameters": {},
             "output": [],
             "versions": "EQ(*)"
-        }, {
+        },
+		{
             "action": "get session token",
             "identifier": "get_session_token",
             "description": "Login to RSA Archer to get session token",
@@ -108,7 +109,8 @@
                 "type": "table"
             },
             "versions": "EQ(*)"
-        }, {
+        },
+		{
             "action": "terminate session",
             "identifier": "terminate_session",
             "description": "Terminate session token to logout of RSA Archer",
@@ -155,6 +157,516 @@
             ],
             "render": {
                 "type": "table"
+            },
+            "versions": "EQ(*)"
+        },
+		{
+            "action": "list tickets",
+            "description": "Get a list of tickets in an application",
+            "verbose": "You must provide both the field name/ID (name_field) and the value to search for (search_value) to search in records, or a JSON string to search multiple fields. If the combination of field name and search value is incorrect or the user provides neither of them, you may get an unfiltered list. Parameters application, name_field, and search_value are case-sensitive.",
+            "type": "investigate",
+            "identifier": "list_tickets",
+            "read_only": true,
+            "parameters": {
+                "application": {
+                    "data_type": "string",
+                    "order": 0,
+                    "description": "Application/Module name (e.g. Incidents)",
+                    "required": true,
+                    "primary": true,
+                    "contains": [
+                        "archer application"
+                    ]
+                },
+                "max_results": {
+                    "data_type": "numeric",
+                    "order": 1,
+                    "description": "Max number of records to return",
+                    "required": true,
+                    "default": 100
+                },
+                "name_field": {
+                    "data_type": "string",
+                    "order": 2,
+                    "description": "Name of field to search in (e.g. \"Incident ID\")"
+                },
+                "search_value": {
+                    "data_type": "string",
+                    "order": 3,
+                    "description": "Value to search for in this application"
+                },
+                "query_filter_json": {
+                    "data_type": "string",
+                    "order": 4,
+                    "description": "JSON with name fields and search values of query filter for this application"
+                },
+                "results_filter_json": {
+                    "data_type": "string",
+                    "order": 5,
+                    "description": "JSON with field names and values of results filter for this application"
+                },
+                "results_filter_operator": {
+                    "description": "Boolean operator of key/value pairs in the results filter JSON for this application",
+                    "order": 6,
+                    "data_type": "string",
+                    "value_list": ["AND", "OR"]
+                }
+            },
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "example_values": [
+                        "success",
+                        "failed"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.application",
+                    "data_type": "string",
+                    "contains": [
+                        "archer application"
+                    ],
+                    "example_values": [
+                        "Incidents"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.max_results",
+                    "data_type": "numeric",
+                    "example_values": [
+                        100
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.name_field",
+                    "data_type": "string",
+                    "example_values": [
+                        "Incident ID"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.search_value",
+                    "data_type": "string",
+                    "example_values": [
+                        "10000"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.query_filter_json",
+                    "data_type": "string",
+					"example_values": [
+                        "{'Incident ID': '10000'}"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.results_filter_json",
+                    "data_type": "string",
+					"example_values": [
+                        "{'Incident ID': '10000'}"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.results_filter_operator",
+                    "data_type": "string",
+					"example_values": [
+                        "AND",
+						"OR"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.@contentId",
+                    "data_type": "numeric",
+                    "contains": [
+                        "archer content id"
+                    ],
+                    "example_values": [
+                        "210035"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.@levelGuid",
+                    "data_type": "string",
+                    "example_values": [
+                        "b0c2da91-167c-4fee-ad91-4b4e7b098b4b"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.@levelId",
+                    "data_type": "string",
+                    "example_values": [
+                        "60"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.@moduleId",
+                    "data_type": "string",
+                    "example_values": [
+                        "70"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.@parentId",
+                    "data_type": "string",
+                    "example_values": [
+                        "0"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.Field.*.#text",
+                    "data_type": "string",
+                    "example_values": [
+                        "<p>Testing address</p>"
+                    ],
+                    "contains": [
+                        "ip"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.Field.*.@guid",
+                    "data_type": "string",
+                    "example_values": [
+                        "d00ae4c0-c75f-4eac-8900-81cf93cb4e21"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.Field.*.@id",
+                    "data_type": "string",
+                    "example_values": [
+                        "1600"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.Field.*.@name",
+                    "data_type": "string",
+                    "example_values": [
+                        "Address"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.Field.*.@type",
+                    "data_type": "string",
+                    "example_values": [
+                        "1"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.Field.*.@xmlConvertedValue",
+                    "data_type": "string",
+                    "example_values": [
+                        "2018-10-01T06:59:00Z"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.Field.*.ListValues.ListValue.#text",
+                    "data_type": "string",
+                    "example_values": [
+                        "California"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.Field.*.ListValues.ListValue.@displayName",
+                    "data_type": "string",
+                    "example_values": [
+                        "California"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.Field.*.ListValues.ListValue.@id",
+                    "data_type": "string",
+                    "example_values": [
+                        "91"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.Field.*.multi_value",
+                    "data_type": "string",
+                    "example_values": [
+                        "No"
+                    ]
+                },
+                {
+                    "data_path": "action_result.summary.records_found",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string",
+                    "example_values": [
+                        "Tickets retrieved"
+                    ]
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                }
+            ],
+            "render": {
+                "type": "custom",
+                "title": "New Archer Record Info",
+                "width": 2,
+                "height": 5,
+                "view": "archer_views.list_tickets"
+            },
+            "versions": "EQ(*)"
+        },
+        {
+            "action": "get report",
+            "description": "Get a list of tickets in a report",
+            "verbose": "The records for a report GUID (guid) are returned.",
+            "type": "investigate",
+            "identifier": "get_report",
+            "read_only": true,
+            "parameters": {
+                "guid": {
+                    "data_type": "string",
+                    "order": 0,
+                    "description": "Report GUID",
+                    "required": true,
+					"contains": [
+                        "archer guid"
+                    ]
+                },
+                "max_results": {
+                    "data_type": "numeric",
+                    "order": 1,
+                    "description": "Max number of records to return",
+                    "required": true,
+                    "default": 100
+                },
+                "max_pages": {
+                    "data_type": "numeric",
+                    "order": 2,
+                    "description": "Max number of report pages to return",
+                    "required": true,
+                    "default": 10
+                },
+                "results_filter_json": {
+                    "data_type": "string",
+                    "order": 3,
+                    "description": "JSON with field names and values of results filter for a report"
+                },
+                "results_filter_operator": {
+                    "description": "Boolean operator of key/value pairs in the results filter JSON for a report",
+                    "order": 4,
+                    "data_type": "string",
+                    "value_list": ["AND", "OR"]
+                }
+            },
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "example_values": [
+                        "success",
+                        "failed"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.guid",
+                    "data_type": "string",
+                    "contains": [
+                        "archer guid"
+                    ],
+                    "example_values": [
+                        "d00ae4c0-c75f-4eac-8900-81cf93cb4e21"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.max_results",
+                    "data_type": "numeric",
+                    "example_values": [
+                        100
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.max_pages",
+                    "data_type": "numeric",
+                    "example_values": [
+                        10
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.results_filter_json",
+                    "data_type": "string",
+					"example_values": [
+                        "{'Incident ID': '10000'}"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.results_filter_operator",
+                    "data_type": "string",
+					"example_values": [
+                        "AND",
+						"OR"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.@contentId",
+                    "data_type": "numeric",
+                    "contains": [
+                        "archer content id"
+                    ],
+                    "example_values": [
+                        "210035"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.@levelGuid",
+                    "data_type": "string",
+                    "example_values": [
+                        "b0c2da91-167c-4fee-ad91-4b4e7b098b4b"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.@levelId",
+                    "data_type": "string",
+                    "example_values": [
+                        "60"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.@moduleId",
+                    "data_type": "string",
+                    "example_values": [
+                        "70"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.@parentId",
+                    "data_type": "string",
+                    "example_values": [
+                        "0"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.Field.*.#text",
+                    "data_type": "string",
+                    "example_values": [
+                        "<p>Testing address</p>"
+                    ],
+                    "contains": [
+                        "ip"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.Field.*.@guid",
+                    "data_type": "string",
+                    "example_values": [
+                        "d00ae4c0-c75f-4eac-8900-81cf93cb4e21"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.Field.*.@id",
+                    "data_type": "string",
+                    "example_values": [
+                        "1600"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.Field.*.@name",
+                    "data_type": "string",
+                    "example_values": [
+                        "Address"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.Field.*.@type",
+                    "data_type": "string",
+                    "example_values": [
+                        "1"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.Field.*.@xmlConvertedValue",
+                    "data_type": "string",
+                    "example_values": [
+                        "2018-10-01T06:59:00Z"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.Field.*.ListValues.ListValue.#text",
+                    "data_type": "string",
+                    "example_values": [
+                        "California"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.Field.*.ListValues.ListValue.@displayName",
+                    "data_type": "string",
+                    "example_values": [
+                        "California"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.Field.*.ListValues.ListValue.@id",
+                    "data_type": "string",
+                    "example_values": [
+                        "91"
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.Field.*.multi_value",
+                    "data_type": "string",
+                    "example_values": [
+                        "No"
+                    ]
+                },
+                {
+                    "data_path": "action_result.summary.records_found",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                },
+                {
+                    "data_path": "action_result.summary.pages_found",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string",
+                    "example_values": [
+                        "Tickets retrieved"
+                    ]
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                }
+            ],
+            "render": {
+                "type": "custom",
+                "title": "New Archer Record Info",
+                "width": 2,
+                "height": 5,
+                "view": "archer_views.get_report"
             },
             "versions": "EQ(*)"
         }

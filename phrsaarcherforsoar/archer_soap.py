@@ -1,17 +1,24 @@
-# --
 # File: archer_soap.py
 #
-# Copyright (c) 2016-2021 Splunk Inc.
+# Copyright (c) 2016-2022 Splunk Inc.
 #
-# SPLUNK CONFIDENTIAL - Use or disclosure of this material in whole or in part
-# without a valid written license from Splunk Inc. is PROHIBITED.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# --
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distributed under
+# the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+# either express or implied. See the License for the specific language governing permissions
+# and limitations under the License.
+from io import BytesIO
 
 import requests
-from lxml import etree
-from io import BytesIO
 from bs4 import UnicodeDammit
+from lxml import etree
+
+import rsaarcherforsoar_consts as archer_consts
 
 SOAPNS = 'http://schemas.xmlsoap.org/soap/envelope/'
 XSINS = 'http://www.w3.org/2001/XMLSchema-instance'
@@ -63,8 +70,7 @@ class ArcherSOAP(object):
         p.text = self.password
         sess_doc = self._do_request(self.base_uri + '/general.asmx', doc)
         sess_root = sess_doc.getroot()
-        result = sess_root.xpath(
-            '/soap:Envelope/soap:Body/dummy:CreateUserSessionFromInstanceResponse/dummy:CreateUserSessionFromInstanceResult', namespaces=ALL_NS_MAP)
+        result = sess_root.xpath(archer_consts.ARCHER_XPATH_AUTH, namespaces=ALL_NS_MAP)
         if result:
             self.session = result[0].text
             return
@@ -85,14 +91,14 @@ class ArcherSOAP(object):
         p.text = self.users_domain
         sess_doc = self._do_request(self.base_uri + '/general.asmx', doc)
         sess_root = sess_doc.getroot()
-        result = sess_root.xpath(
-            '/soap:Envelope/soap:Body/dummy:CreateDomainUserSessionFromInstanceResponse/dummy:CreateDomainUserSessionFromInstanceResult', namespaces=ALL_NS_MAP)
+        result = sess_root.xpath(archer_consts.ARCHER_XPATH_DOMAIN_USER_AUTH, namespaces=ALL_NS_MAP)
         if result:
             self.session = result[0].text
             return
         raise Exception('Failed to authenticate to Archer web services')
 
     def terminate_session(self, token):
+        self.session = None
         doc, body = self._generate_xml_stub()
 
         n = etree.SubElement(
@@ -118,8 +124,7 @@ class ArcherSOAP(object):
         u.text = groupname
         resp_doc = self._do_request(self.base_uri + '/accesscontrol.asmx', doc)
         resp_root = resp_doc.getroot()
-        result = resp_root.xpath(
-            '/soap:Envelope/soap:Body/dummy:LookupGroupResponse/dummy:LookupGroupResult/dummy:Groups/dummy:/Group/dummy:Name', namespaces=ALL_NS_MAP)
+        result = resp_root.xpath(archer_consts.ARCHER_XPATH_GROUP, namespaces=ALL_NS_MAP)
         if result:
             for name_ele in result:
                 if name_ele.text == groupname:
@@ -163,7 +168,8 @@ class ArcherSOAP(object):
             return int(result[0].text)
         return
 
-    def find_records(self, mod_id, mod_name, key_id, key_name, value, filter_type='text', max_count=1000, fields=None, comparison='Equals', sort=None, page=1):
+    def find_records(self, mod_id, mod_name, key_id, key_name, value,
+                     filter_type='text', max_count=1000, fields=None, comparison='Equals', sort=None, page=1):
         if not self.session:
             raise Exception('No session')
         if fields is None:
@@ -370,6 +376,29 @@ class ArcherSOAP(object):
         body = etree.SubElement(envelope, etree.QName(SOAPNS, 'Body'))
         return document, body
 
+    def get_report(self, guid, page_number):
+        doc, body = self._generate_xml_stub()
+        gr = etree.SubElement(body, 'SearchRecordsByReport', nsmap=ARCHER_MAP)
+        to = etree.SubElement(gr, 'sessionToken')
+        to.text = self.session
+        gi = etree.SubElement(gr, 'reportIdOrGuid')
+        gi.text = str(guid)
+        pn = etree.SubElement(gr, 'pageNumber')
+        pn.text = str(page_number)
+        resp_doc = self._do_request(self.base_uri + '/search.asmx', doc)
+        resp_root = resp_doc.getroot()
+        rec_xml = resp_root.xpath(
+                '/soap:Envelope/soap:Body/dummy:SearchRecordsByReportResponse/dummy:SearchRecordsByReportResult', namespaces=ALL_NS_MAP)
+
+        if len(rec_xml) > 0:
+            return {'status': 'success', 'result': rec_xml[0].text}
+        else:
+            rec_xml = resp_root.xpath('//*[local-name()="faultstring"]', namespaces=ALL_NS_MAP)
+            if len(rec_xml) > 0:
+                return {'status': 'failed', 'result': rec_xml[0].text}
+            else:
+                return {'status': 'failed', 'result': 'Unable to find SearchRecordsByReportResult.'}
+
     def _do_request(self, uri, doc, method='post'):
         if method == 'post':
             xml = etree.tostring(doc, pretty_print=True)
@@ -382,9 +411,89 @@ class ArcherSOAP(object):
                 'Content-Type': 'text/xml; charset=utf-8',
                 'SOAPAction': '"http://archer-tech.com/webservices/{}"'.format(api),
             }
-            response = requests.post(
+            response = requests.post(  # nosemgrep: python.requests.best-practice.use-timeout.use-timeout
                 uri, data=xml, headers=headers, verify=self.verify_cert)
             r_io = BytesIO(response.text.encode('UTF8'))
             resp_doc = etree.parse(r_io)
             return resp_doc
         raise ValueError('Invalid Method')
+
+    def find_records_dict(self, mod_id, mod_name, filter_id_dict,
+                     filter_type='text', max_count=1000, fields=None, comparison='Equals', sort=None, page=1):
+
+        if not self.session:
+            raise Exception('No session')
+        if fields is None:
+            raise Exception('No fields found for {} app'.format(mod_name))
+        doc, body = self._generate_xml_stub()
+        se = etree.SubElement(body, 'ExecuteSearch', nsmap=ARCHER_MAP)
+        to = etree.SubElement(se, 'sessionToken')
+        to.text = self.session
+        pn = etree.SubElement(se, 'pageNumber')
+        pn.text = str(page)
+        so = etree.SubElement(se, 'searchOptions')
+
+        sr = etree.Element('SearchReport')
+        report_doc = etree.ElementTree(sr)
+
+        ps = etree.SubElement(sr, 'PageSize')
+        ps.text = str(max_count)
+        dfs = etree.SubElement(sr, 'DisplayFields')
+        for field_id, field_name in list(fields.items()):
+            df = etree.SubElement(dfs, 'DisplayField')
+            df.text = str(field_id)
+            df.set('name', UnicodeDammit(field_name).unicode_markup.encode(
+                'ascii', 'xmlcharrefreplace'))
+
+        cr = etree.SubElement(sr, 'Criteria')
+        if not comparison:
+            if filter_type == 'numeric':
+                comparison = 'Equals'
+            else:
+                comparison = 'Contains'
+        if len(filter_id_dict) > 0:
+            fi = etree.SubElement(cr, 'Filter')
+            co = etree.SubElement(fi, 'Conditions')
+            for k, v in filter_id_dict.items():
+                if v['value'] is not None and v['value'] != '':
+                    if filter_type == 'numeric':
+                        fc = etree.SubElement(co, 'NumericFilterCondition')
+                        op = etree.SubElement(fc, 'Operator')
+                        op.text = comparison
+                    else:
+                        fc = etree.SubElement(co, 'TextFilterCondition')
+                        op = etree.SubElement(fc, 'Operator')
+                        op.text = 'Contains'
+                    fi = etree.SubElement(fc, 'Field')
+                    fi.text = str(k)
+                    val = etree.SubElement(fc, 'Value')
+                    val.text = str(v['value'])
+
+        mc = etree.SubElement(cr, 'ModuleCriteria')
+        m = etree.SubElement(mc, 'Module')
+        if sort and len(filter_id_dict) == 1:
+            sfs = etree.SubElement(mc, 'SortFields')
+            for k, v in filter_id_dict.items():
+                sf = etree.SubElement(sfs, 'SortField')
+                sfid = etree.SubElement(sf, 'Field')
+                sfid.text = str(k)
+                sft = etree.SubElement(sf, 'SortType')
+                sft.text = sort
+                break
+        m.set('name', mod_name)
+        m.text = str(mod_id)
+
+        so.text = etree.tostring(report_doc, pretty_print=True)
+
+        resp_doc = self._do_request(self.base_uri + '/search.asmx', doc)
+
+        resp_root = resp_doc.getroot()
+        result = resp_root.xpath(
+            '/soap:Envelope/soap:Body/dummy:ExecuteSearchResponse/dummy:ExecuteSearchResult', namespaces=ALL_NS_MAP)
+        if not result:
+            return []
+
+        r_io = BytesIO(result[0].text.encode('UTF8'))
+        xmlp = etree.XMLParser(encoding='utf-8')
+        search_result = etree.parse(r_io, parser=xmlp)
+        return search_result.xpath('/Records/Record')
