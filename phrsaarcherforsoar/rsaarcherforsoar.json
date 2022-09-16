@@ -48,7 +48,7 @@
             "required": true,
             "order": 3
         },
-        "verify_ssl": {
+        "verifySSL": {
             "description": "Verify server certificate",
             "data_type": "boolean",
             "required": true,

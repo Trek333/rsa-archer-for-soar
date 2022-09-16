@@ -308,7 +308,7 @@ class RsaArcherForSoarConnector(BaseConnector):
         """Returns an archer_utils.ArcherAPISession object."""
         if not self.proxy:
             ep, user, pwd, instance, users_domain = self._get_proxy_args()
-            verify = self.get_config().get('verify_ssl')
+            verify = self.get_config().get('verifySSL')
             self.debug_print('New Archer API session at ep:{}, user:{}, '
                              'verify:{}'.format(ep, user, verify))
             self.proxy = archer_utils.ArcherAPISession(ep, user, pwd, instance, self.python_version, users_domain)
@@ -536,7 +536,7 @@ class RsaArcherForSoarConnector(BaseConnector):
         self.userName = config['userName']
         self.password = config['password']
         self.instanceName = config['instanceName']
-        self.verifySSL = config['verify_ssl']
+        self.verifySSL = config['verifySSL']
         self.usersDomain = config.get('usersDomain', '')
         self.python_version = int(sys.version_info[0])
 
