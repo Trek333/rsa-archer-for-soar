@@ -345,14 +345,26 @@ class RsaArcherForSoarConnector(BaseConnector):
             results_filter_dict = json.loads(results_filter_json)
         else:
             results_filter_dict = None
+
         results_filter_operator = param.get('results_filter_operator')
+        results_filter_equality = param.get('results_filter_equality')
+        try:
+            results_filter_operator = results_filter_operator.lower()
+        except:
+            pass
+        try:
+            results_filter_equality = results_filter_equality.lower()
+        except:
+            pass
 
         status, max_count = self._validate_integer(action_result, max_count, "max_result", False)
         if (phantom.is_fail(status)):
             return action_result.get_status()
 
-        if (results_filter_dict or results_filter_operator) and not (results_filter_dict and results_filter_operator):
-            action_result.set_status(phantom.APP_ERROR, 'Need both results filter json and results filter operator to filter the results')
+        if (results_filter_dict or results_filter_operator or results_filter_equality) \
+          and not (results_filter_dict and results_filter_operator and results_filter_equality):
+            action_result.set_status(phantom.APP_ERROR,
+              'Need results filter json, results filter operator and results filter equality to filter the results')
             return action_result.get_status()
 
         proxy = self._get_proxy()
@@ -370,15 +382,17 @@ class RsaArcherForSoarConnector(BaseConnector):
             filter_dict[search_field_name] = search_value
             records = proxy.find_records(app, search_field_name, search_value, max_count)
 
+        term_msg = proxy.terminate_session()
+
         if results_filter_dict:
-            filtered_records = self.filter_records(results_filter_dict, results_filter_operator, records)
+            filtered_records = self.filter_records(results_filter_dict, results_filter_operator, results_filter_equality, records)
         else:
             filtered_records = records
 
         if filtered_records:
             for r in filtered_records:
                 action_result.add_data(r)
-            action_result.set_status(phantom.APP_SUCCESS, 'Tickets retrieved')
+            action_result.set_status(phantom.APP_SUCCESS, 'Tickets retrieved{}'.format(term_msg))
             action_result.update_summary({'records_found': len(filtered_records)})
         else:
             filter_msg = ''
@@ -397,34 +411,44 @@ class RsaArcherForSoarConnector(BaseConnector):
             if filter_msg != '':
                 filter_msg = ' with {}'.format(filter_msg)
 
-            action_result.set_status(phantom.APP_ERROR, 'Found no tickets for {}{}'.format(app, filter_msg))
+            action_result.set_status(phantom.APP_SUCCESS, 'Found no tickets for {}{}{}'.format(app, filter_msg, term_msg))
             action_result.update_summary({'records_found': 0})
 
         return action_result.get_status()
 
-    def filter_records(self, results_filter_dict, results_filter_operator, records):
+    def filter_records(self, results_filter_dict, results_filter_operator, results_filter_equality, records):
         filtered_records = []
 
-        if results_filter_operator == "AND":
+        if results_filter_operator == 'and':
             and_dict_len = len(results_filter_dict)
             for record in records:
                 and_dict_count = 0
                 for field in record['Field']:
                     for k, v in results_filter_dict.items():
-                        if field['@name'] == k and v.lower() in field['#text'].lower():
-                            and_dict_count = and_dict_count + 1
+                        if results_filter_equality == 'equals':
+                            if field['@name'] == k and v.lower() == field['#text'].lower():
+                                and_dict_count = and_dict_count + 1
+                        else:
+                            if field['@name'] == k and v.lower() in field['#text'].lower():
+                                and_dict_count = and_dict_count + 1
                 if and_dict_count >= and_dict_len:
                     filtered_records.append(record)
 
-        elif results_filter_operator == "OR":
+        elif results_filter_operator == 'or':
             for record in records:
                 next_record = False
                 for field in record['Field']:
                     for k, v in results_filter_dict.items():
-                        if field['@name'] == k and v.lower() in field['#text'].lower():
-                            filtered_records.append(record)
-                            next_record = True
-                            break
+                        if results_filter_equality == 'equals':
+                            if field['@name'] == k and v.lower() == field['#text'].lower():
+                                filtered_records.append(record)
+                                next_record = True
+                                break
+                        else:
+                            if field['@name'] == k and v.lower() in field['#text'].lower():
+                                filtered_records.append(record)
+                                next_record = True
+                                break
                     if next_record:
                         break
 
@@ -442,7 +466,17 @@ class RsaArcherForSoarConnector(BaseConnector):
             results_filter_dict = json.loads(results_filter_json)
         else:
             results_filter_dict = None
+
         results_filter_operator = param.get('results_filter_operator')
+        results_filter_equality = param.get('results_filter_equality')
+        try:
+            results_filter_operator = results_filter_operator.lower()
+        except:
+            pass
+        try:
+            results_filter_equality = results_filter_equality.lower()
+        except:
+            pass
 
         status, max_count = self._validate_integer(action_result, max_count, "max_result", False)
         if (phantom.is_fail(status)):
@@ -450,6 +484,12 @@ class RsaArcherForSoarConnector(BaseConnector):
 
         status, max_pages = self._validate_integer(action_result, max_pages, "max_pages", False)
         if (phantom.is_fail(status)):
+            return action_result.get_status()
+
+        if (results_filter_dict or results_filter_operator or results_filter_equality) \
+          and not (results_filter_dict and results_filter_operator and results_filter_equality):
+            action_result.set_status(phantom.APP_ERROR,
+              'Need results filter json, results filter operator and results filter equality to filter the results')
             return action_result.get_status()
 
         proxy = self._get_proxy()
@@ -461,16 +501,17 @@ class RsaArcherForSoarConnector(BaseConnector):
                 return action_result.get_status()
 
             records = result_dict['records']
+            term_msg = proxy.terminate_session()
 
             if results_filter_dict:
-                filtered_records = self.filter_records(results_filter_dict, results_filter_operator, records)
+                filtered_records = self.filter_records(results_filter_dict, results_filter_operator, results_filter_equality, records)
             else:
                 filtered_records = records
 
             if filtered_records:
                 for r in filtered_records:
                     action_result.add_data(r)
-                action_result.set_status(phantom.APP_SUCCESS, 'Tickets retrieved')
+                action_result.set_status(phantom.APP_SUCCESS, 'Tickets retrieved{}'.format(term_msg))
                 action_result.update_summary({'records_found': len(filtered_records)})
                 action_result.update_summary({'pages_found': result_dict['page_count']})
             else:
@@ -480,7 +521,7 @@ class RsaArcherForSoarConnector(BaseConnector):
                 else:
                     filter_msg = ''
 
-                action_result.set_status(phantom.APP_ERROR, 'Found no tickets{}'.format(filter_msg))
+                action_result.set_status(phantom.APP_SUCCESS, 'Found no tickets{}{}'.format(filter_msg, term_msg))
                 action_result.update_summary({'records_found': 0})
                 action_result.update_summary({'pages_found': result_dict['page_count']})
 

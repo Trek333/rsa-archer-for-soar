@@ -11,7 +11,7 @@
     "product_version_regex": ".*",
     "publisher": "Jeff Berry",
     "license": "Copyright (c) Jeff Berry, 2022",
-    "app_version": "1.0.3",
+    "app_version": "1.0.4",
     "utctime_updated": "2021-11-08T16:42:53.015273Z",
     "package_name": "phantom_rsaarcherforsoar",
     "main_module": "rsaarcherforsoar_connector.py",
@@ -210,6 +210,12 @@
                     "order": 6,
                     "data_type": "string",
                     "value_list": ["AND", "OR"]
+                },
+                "results_filter_equality": {
+                    "description": "Equality operator of key/value pairs in the results filter JSON for this application",
+                    "order": 7,
+                    "data_type": "string",
+                    "value_list": ["Contains", "Equals"]
                 }
             },
             "output": [
@@ -272,6 +278,14 @@
 					"example_values": [
                         "AND",
 						"OR"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.results_filter_equality",
+                    "data_type": "string",
+					"example_values": [
+                        "Contains",
+						"Equals"
                     ]
                 },
                 {
@@ -464,6 +478,12 @@
                     "order": 4,
                     "data_type": "string",
                     "value_list": ["AND", "OR"]
+                },
+                "results_filter_equality": {
+                    "description": "Equality operator of key/value pairs in the results filter JSON for a report",
+                    "order": 5,
+                    "data_type": "string",
+                    "value_list": ["Contains", "Equals"]
                 }
             },
             "output": [
@@ -512,6 +532,14 @@
 					"example_values": [
                         "AND",
 						"OR"
+                    ]
+                },
+                {
+                    "data_path": "action_result.parameter.results_filter_equality",
+                    "data_type": "string",
+					"example_values": [
+                        "Contains",
+						"Equals"
                     ]
                 },
                 {

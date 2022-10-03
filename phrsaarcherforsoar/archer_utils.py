@@ -968,15 +968,18 @@ class ArcherAPISession(object):
             filter_id_dict = {}
             for k, v in filter_dict.items():
                 fid = int(k)
-                filter_id_dict[fid] = {}
-                filter_id_dict[fid]['value'] = v
-                filter_id_dict[fid]['name'] = str(k)
+                filter_id_dict[k] = {}
+                filter_id_dict[k]['value'] = v
+                filter_id_dict[k]['fid'] = str(fid)
         except (ValueError, TypeError):
             try:
                 filter_id_dict = self.get_fieldId_for_app_and_name_dict(app, filter_dict)
             except Exception as e:
                 err = self._get_error_message_from_exception(e)
-                raise Exception('{}'.format(err))
+        for k, v in filter_id_dict.items():
+            if k and v['value'] and not v['fid']:
+                raise Exception('Failed to find field "{}" in "{}": {}'.format(k, app, err))
+
         mid = self.get_moduleid(app)
         fields = self._get_field_id_map(app)
         if fields is None:
@@ -1069,15 +1072,32 @@ class ArcherAPISession(object):
         filter_id_dict = {}
         for k, v in filter_dict.items():
             found_match = False
+            filter_id_dict[k] = {}
+            filter_id_dict[k]['value'] = v
+            filter_id_dict[k]['fid'] = None
             for fld in flds:
                 if fld['RequestedObject']['Name'] == k:
                     W('Found a match!')
                     fid = fld['RequestedObject']['Id']
-                    filter_id_dict[fid] = {}
-                    filter_id_dict[fid]['value'] = v
-                    filter_id_dict[fid]['name'] = k
+                    filter_id_dict[k]['fid'] = str(fid)
                     found_match = True
                     break
             if not found_match:
                 W('Found no match for field "{}" in "{}"'.format(k, app))
         return filter_id_dict
+
+    def terminate_session(self):
+        try:
+            if self.sessionToken:
+                result = self.asoap.terminate_session(self.sessionToken)
+            else:
+                result = self.asoap.terminate_session(self.get_token())
+        except Exception as e:
+            result = str(e)
+
+        if result == '1':
+            result = ''
+        else:
+            result = ' - Terminate session details: {}'.format(result)
+
+        return result

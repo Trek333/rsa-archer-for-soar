@@ -465,7 +465,7 @@ class ArcherSOAP(object):
                         op = etree.SubElement(fc, 'Operator')
                         op.text = 'Contains'
                     fi = etree.SubElement(fc, 'Field')
-                    fi.text = str(k)
+                    fi.text = str(v['fid'])
                     val = etree.SubElement(fc, 'Value')
                     val.text = str(v['value'])
 
@@ -476,7 +476,7 @@ class ArcherSOAP(object):
             for k, v in filter_id_dict.items():
                 sf = etree.SubElement(sfs, 'SortField')
                 sfid = etree.SubElement(sf, 'Field')
-                sfid.text = str(k)
+                sfid.text = str(v['fid'])
                 sft = etree.SubElement(sf, 'SortType')
                 sft.text = sort
                 break
