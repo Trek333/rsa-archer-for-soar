@@ -11,7 +11,7 @@
     "product_version_regex": ".*",
     "publisher": "Jeff Berry",
     "license": "Copyright (c) Jeff Berry, 2022",
-    "app_version": "1.0.4",
+    "app_version": "1.0.5",
     "utctime_updated": "2021-11-08T16:42:53.015273Z",
     "package_name": "phantom_rsaarcherforsoar",
     "main_module": "rsaarcherforsoar_connector.py",

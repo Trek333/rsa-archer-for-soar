@@ -841,6 +841,9 @@ class ArcherAPISession(object):
             merge_dict['message'] = 'Failed - default message'
             merge_dict['records'] = []
 
+            if not isinstance(raw_records, list):
+                raw_records = [raw_records]
+
             for raw_record in raw_records:
 
                 # Initialize field variables and increment the total record count
@@ -916,7 +919,8 @@ class ArcherAPISession(object):
         except Exception as e:
             merge_dict['message'] = 'Failed to merge field definitions with report page {} ticket data - e = {}'. \
                 format(page_number, e)
-            return merge_dict
+            merge_dict['message'] = merge_dict['message'] + \
+                'Error on line {}'.format(sys.exc_info()[-1].tb_lineno)
 
     def process_user_multivalue(self, x):
 
