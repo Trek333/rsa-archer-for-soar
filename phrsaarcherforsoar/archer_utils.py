@@ -919,8 +919,7 @@ class ArcherAPISession(object):
         except Exception as e:
             merge_dict['message'] = 'Failed to merge field definitions with report page {} ticket data - e = {}'. \
                 format(page_number, e)
-            merge_dict['message'] = merge_dict['message'] + \
-                'Error on line {}'.format(sys.exc_info()[-1].tb_lineno)
+            return merge_dict
 
     def process_user_multivalue(self, x):
 
